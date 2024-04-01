@@ -1,16 +1,9 @@
 package com.company;
 
 class Main{
-    public static void main(String []args){
-        Game game = new Game(10, 10, 3, 100, 6, 3);
+    public static void main(String []args) {
+        Game game = new Game(50, 50, 8, 100, 4, 5, 1);
         game.setVisible(true);
-//        1 5
-//        Time 350
-//        3 5
-//        Time 969
-//        18 5
-//        Time 3052
-//        2 5
-//        Time 550
+        // 60 sek
     }
 }

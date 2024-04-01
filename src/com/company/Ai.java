@@ -1,148 +1,118 @@
 package com.company;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 
 public class Ai {
-    private int comp;
-    private int human;
+    private int countMoves = 0;
+    private final int comp;
+    private final int human;
     private int depth;
-    private int pobednayaDlinna;
-    private ArrayList<ArrayList<Integer>> Corbinations;
-    private int[] alp = {-1, -2000000};
-    private int[] bet = {-1, 2000000};
-    private Score ochenka;
-    public Ai(int depth, int pobednayaDlinna, ArrayList<ArrayList<Integer>> Corbinations){
+    private final ArrayList<ArrayList<Integer>> winningCombinations;
+    private final Score score;
+    public Ai(int depth, int winLength, ArrayList<ArrayList<Integer>> winningCombinations){
         this.comp = -1;
         this.human = 1;
         this.depth = depth;
-        this.Corbinations = Corbinations;
-        this.pobednayaDlinna =  pobednayaDlinna;
-        this.ochenka = new Score(Corbinations, pobednayaDlinna);
+        this.winningCombinations = winningCombinations;
+        this.score = new Score(winningCombinations, winLength);
     }
-    public int getMove(ArrayList<Integer> pole){
-        Integer kol = count(pole);
-        if(depth > kol){
-            depth = kol;
+    public int getMove(ArrayList<Integer> pole) {
+        int sqr = (int)Math.sqrt(pole.size());
+        if (countMoves % sqr  == 0 && countMoves != 0) {
+            depth += 2;
         }
-        //System.out.println(ochenka.getOchenku(pole, comp));
-        int[] hod = minimaxAlphaBeta(pole, depth, comp, alp, bet);
-        System.out.println(hod[0] + " " + hod[1]);
-        return hod[0];
+        System.out.println("start search depth = " + depth);
+        int[] hod = minimaxAlphaBeta(pole, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, comp);
+        System.out.println("end search depth = " + depth + " move cell = " + hod[1] + " score = " + hod[0]);
+        countMoves++;
+        return hod[1];
 
     }
 
-    private int count(ArrayList<Integer> pole){
-        int c = 0;
-        for(Integer i: pole){
-            if(i == null){
-                c++;
-            }
-        }
-        return c;
+    private long count(ArrayList<Integer> pole) {
+        return pole.stream().filter(Objects::isNull).count();
     }
 
-    private ArrayList<Integer> emptyCells(ArrayList<Integer> pole){
-        ArrayList<Integer> pustie = new ArrayList<>(pole.size());
-        for (int i = 0; i != pole.size(); i++) {
-            if(pole.get(i) == null){
-                pustie.add(i);
-            }
-        }
-        return  pustie;
-    }
-
-    private boolean odinakovie(ArrayList<Integer> pole){
-        if(pole.get(0) == null){
+    private boolean ownedOnePlayer(ArrayList<Integer> comb, ArrayList<Integer> pole) {
+        if (pole.get(comb.get(0)) == null) {
             return false;
         }
-        int per = pole.get(0);
-        for(int i = 1; i != pole.size(); i++){
-            if(pole.get(i) == null || per != pole.get(i)){
+        int first = pole.get(comb.get(0));
+
+        for (int i = 1; i != comb.size(); i++) {
+            Integer pos = comb.get(i);
+            if (pole.get(pos) == null) {
+                return false;
+            }
+            if (pole.get(pos) != first) {
                 return false;
             }
         }
         return true;
     }
 
-    private int score(int who, int player){
-        if(who == comp){
-            return 10000;
-        } else if(who == human){
-            return -10000;
+    private ArrayList<Integer> emptyCells(ArrayList<Integer> pole){
+        return IntStream.range(0, pole.size())
+                .filter(i -> pole.get(i) == null)
+                .boxed()
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private int score(int who, ArrayList<Integer> gameState, int player) {
+        if (who == comp) {
+            return 100000000;
+        } else if (who == human) {
+            return -100000000;
+        }
+        if (player == comp) {
+            return score.getScore(gameState, player) - score.getScore(gameState, -player);
         } else {
-//            if(ochi != 0) {
-//                if (player == comp) {
-//                    return ochi;
-//                } else {
-//                    return -ochi;
-//                }
-//            }
-            return 5;
+            return score.getScore(gameState, -player) - score.getScore(gameState, player);
         }
     }
 
-    private int isWin(ArrayList<Integer> pole){
-        ArrayList<Integer> cord = new ArrayList<>(pobednayaDlinna);
-        for(ArrayList<Integer> wincomb: Corbinations){
-            for(Integer tt: wincomb){
-                cord.add(pole.get(tt));
+    public int isWin(ArrayList<Integer> pole) {
+        for(ArrayList<Integer> winComb: winningCombinations){
+            if (ownedOnePlayer(winComb, pole)) {
+                return pole.get(winComb.get(0));
             }
-            if(odinakovie(cord)){
-                return cord.get(0);
-            }
-            cord.clear();
         }
         return 0;
     }
 
-    private int[] minimaxAlphaBeta(ArrayList<Integer> pole, int depth, int player,
-                                       int[] alpha, int[] beta) {
-        int who = isWin(pole);
-        if(depth == 0 || who != 0){
-            return new int[]{-1, score(who, player)};
+    private int[] minimaxAlphaBeta(ArrayList<Integer> gameState, int depth, int alpha, int beta, int player) {
+        int gameResult = isWin(gameState);
+        if (depth == 0 || gameResult != 0 || count(gameState) == 0) {
+            return new int[] {score(gameResult, gameState, player) * (depth + 1), -1};
         }
-        if(player == comp){
-            int[] best = new int[]{-1, -500000};
-            for (Integer cell: emptyCells(pole)){
-                pole.set(cell, player);
-                int[] val = minimaxAlphaBeta(pole, depth - 1, -player, alpha, beta);
-                pole.set(cell, null);
-                val[0] = cell;
-                if(val[1] > best[1]){
-                    best = val;
-                }
-                if(best[1] >= alpha[1]){
-                    alpha = best;
-                }
-                if(alpha[1] >= beta[1]){
-                    break;
-                }
-            }
-            return best;
 
-        }else{
-            int[] best = new int[]{-1, 500000};
-            for (Integer cell: emptyCells(pole)){
-                pole.set(cell, player);
-                int[] val = minimaxAlphaBeta(pole, depth - 1, -player, alpha, beta);
-                pole.set(cell, null);
-                val[0] = cell;
-                if(val[1] < best[1]){
-                    best = val;
+        int bestMove = -1;
+        int scoreEval = player == comp ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        List<Integer> availableMoves = emptyCells(gameState);
+
+        for (Integer move : availableMoves) {
+            gameState.set(move, player);
+            int eval = minimaxAlphaBeta(gameState, depth - 1, alpha, beta, -player)[0];
+            gameState.set(move, null);
+
+            if (player == comp) {
+                if (eval > scoreEval) {
+                    scoreEval = eval;
+                    bestMove = move;
+                    alpha = Math.max(alpha, eval);
                 }
-                if(best[1] <= beta[1]){
-                    beta = best;
-                }
-                if(alpha[1] >= beta[1]){
-                    break;
+            } else {
+                if (eval < scoreEval) {
+                    scoreEval = eval;
+                    bestMove = move;
+                    beta = Math.min(beta, eval);
                 }
             }
-            return best;
+            if (beta <= alpha) break;
         }
+        return new int[] {scoreEval, bestMove};
     }
-
-
-
 }
