@@ -1,25 +1,23 @@
 package com.company;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.*;
 
 public class Game extends JFrame {
     private final int x;
     private final int y;
     private final int squareSize;
     private final int fieldSize;
-    private int firstMove = -1;
+    private int firstMove;
     private final int winLength;
     private final int cellCount;
     private final ArrayList<ArrayList<Integer>> field;
     public ArrayList<ArrayList<Integer>> winsCombinations = new ArrayList<>();
     private final Ai bot;
-    public Game(int x, int y, int fieldSize, int squareSize, int deph, int winLength, int firstMove) {
+    public Game(int x, int y, int fieldSize, int squareSize, int depth, int winLength, int firstMove) {
         this.x = x;
         this.y = y;
         this.squareSize = squareSize;
@@ -31,12 +29,12 @@ public class Game extends JFrame {
         for (int y1 = 0; y1 != fieldSize; y1++) {
             for (int x1 = 0; x1 != fieldSize ; x1++) {
                 field.add(new ArrayList<>(Arrays.asList((squareSize * x1) + x,
-                        (y1 * squareSize) + y, null)));
+                        (y1 * squareSize) + y, 0)));
             }
         }
         generateWinsCombinations();
         initDraw();
-        bot = new Ai(deph, winLength, winsCombinations);
+        bot = new Ai(depth, winLength, winsCombinations);
         if (firstMove == -1) {
             click(0, 0);
         }
@@ -61,7 +59,7 @@ public class Game extends JFrame {
                     }
                     winsLine.add(cord);
                     if(winsLine.size() == winLength){
-                        winsCombinations.add((ArrayList)winsLine.clone());
+                        winsCombinations.add(new ArrayList<>(winsLine));
                         winsLine.clear();
                     }
                 }
@@ -79,7 +77,7 @@ public class Game extends JFrame {
                 }
                 winsLine.add(j);
                 if(winsLine.size() == winLength){
-                    winsCombinations.add((ArrayList)winsLine.clone());
+                    winsCombinations.add(new ArrayList<>(winsLine));
                     winsLine.clear();
                 }
             }
@@ -94,11 +92,17 @@ public class Game extends JFrame {
                 }
                 winsLine.add(j+i);
                 if(winsLine.size() == winLength){
-                    winsCombinations.add((ArrayList)winsLine.clone());
+                    winsCombinations.add(new ArrayList<>(winsLine));
                     winsLine.clear();
                 }
             }
         }
+        for (var com : winsCombinations) {
+            Collections.sort(com);
+        }
+
+        winsCombinations = new ArrayList<>(new HashSet<>(winsCombinations));
+
     }
 
     private void initDraw() {
@@ -111,38 +115,34 @@ public class Game extends JFrame {
         setSize(x * 2 + squareSize * fieldSize, y * 2 + squareSize * fieldSize);
         addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                click(e.getX(), e.getY());
-                //System.out.println("Click position (X, Y):  " + e.getX() + ", " + e.getY());
+                    click(e.getX(), e.getY());
             }
         });
     }
 
     private void click(int x, int y) {
         int index = centreCell(x, y);
-        if (firstMove == 1 && field.get(index).get(2) == null) {
+        this.repaint();
+        if (firstMove == 1 && index != -1 && field.get(index).get(2) == 0) {
             field.get(index).set(2, 1);
             firstMove = -1;
-            this.repaint();
         }
 
-        long t = System.nanoTime();
         index = bot.getMove(getField());
-        System.out.println("Time " + ((System.nanoTime() - t) / 1000000));
-        if (firstMove == -1) {
+
+        if (firstMove == -1 && index != -1 && field.get(index).get(2) == 0) {
             field.get(index).set(2, -1);
             firstMove = 1;
         }
 
-        this.repaint();
-
     }
 
     private ArrayList<Integer> getField() {
-        ArrayList<Integer> Pole = new ArrayList<>(cellCount);
+        ArrayList<Integer> pole = new ArrayList<>(cellCount);
         for(int i = 0; i != field.size(); i ++){
-            Pole.add(field.get(i).get(2));
+            pole.add(field.get(i).get(2));
         }
-        return Pole;
+        return pole;
     }
 
     private int centreCell(int x, int y) {
@@ -167,12 +167,12 @@ public class Game extends JFrame {
             int x = cell.get(0);
             int y = cell.get(1);
             g2D.drawRect(x, y, squareSize, squareSize);
-            if (cell.get(2) != null && cell.get(2) == 1){
+            if (cell.get(2) == 1){
                 g2D.setColor(Color.red);
                 g2D.drawLine(x + 10, y + 10, x + squareSize - 10, y + squareSize - 10);
                 g2D.drawLine(x + 10, y + squareSize - 10, x + squareSize - 10, y + 10);
                 g2D.setColor(Color.black);
-            }else if (cell.get(2) != null && cell.get(2) == -1){
+            }else if (cell.get(2) == -1){
                 g2D.setColor(Color.blue);
                 g2D.drawOval(x + 10, y + 10, squareSize - 20, squareSize - 20);
                 g2D.setColor(Color.black);
