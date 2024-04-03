@@ -1,9 +1,9 @@
 package com.company;
 
-class Main{
+
+class Main {
     public static void main(String []args) {
-        Game game = new Game(50, 50, 8, 100, 4, 5, 1);
+        Game game = new Game(50, 50, 5, 80, 8, 4, -1);
         game.setVisible(true);
-        // 60 sek
     }
 }

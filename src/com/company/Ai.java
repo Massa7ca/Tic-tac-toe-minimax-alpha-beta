@@ -1,53 +1,68 @@
 package com.company;
 
-import java.util.*;
+import javafx.util.Pair;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 
 public class Ai {
-    private int countMoves = 0;
     private final int comp;
     private final int human;
     private int depth;
+    private final HashMap<Pair<ArrayList<Integer>, Integer>, Integer> cache;
     private final ArrayList<ArrayList<Integer>> winningCombinations;
+    private final ArrayList<Integer> moveTimeHistory = new ArrayList<>();
     private final Score score;
     public Ai(int depth, int winLength, ArrayList<ArrayList<Integer>> winningCombinations){
         this.comp = -1;
         this.human = 1;
         this.depth = depth;
+        this.cache = new HashMap<>();
         this.winningCombinations = winningCombinations;
         this.score = new Score(winningCombinations, winLength);
     }
-    public int getMove(ArrayList<Integer> pole) {
-        int sqr = (int)Math.sqrt(pole.size());
-        if (countMoves % sqr  == 0 && countMoves != 0) {
+    public int getMove(OptimizedHashArrayList<Integer> pole) {
+        winningCombinations.removeIf(it -> combIsFull(it, pole));
+        if (countTimeFast(moveTimeHistory) == 4) {
             depth += 2;
+            moveTimeHistory.clear();
+            System.out.println("depth set = " + depth);
         }
         System.out.println("start search depth = " + depth);
+        long t = System.nanoTime();
         int[] hod = minimaxAlphaBeta(pole, depth, Integer.MIN_VALUE, Integer.MAX_VALUE, comp);
-        System.out.println("end search depth = " + depth + " move cell = " + hod[1] + " score = " + hod[0]);
-        countMoves++;
+        int time = (int) ((System.nanoTime() - t) / 1000000);
+        moveTimeHistory.add(time);
+        System.out.println("end search depth = " + depth + " move cell = " + hod[1] + " score = " + hod[0] + " time " + time);
         return hod[1];
 
     }
 
+    private boolean combIsFull(ArrayList<Integer> comb, ArrayList<Integer> pole) {
+        for (Integer pos : comb) {
+            if (pole.get(pos) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+    private long countTimeFast(ArrayList<Integer> moveTimeHistory) {
+        return moveTimeHistory.stream().filter(i -> i < 1000).count();
+    }
+
     private long count(ArrayList<Integer> pole) {
-        return pole.stream().filter(Objects::isNull).count();
+        return pole.stream().filter(i -> i == 0).count();
     }
 
     private boolean ownedOnePlayer(ArrayList<Integer> comb, ArrayList<Integer> pole) {
-        if (pole.get(comb.get(0)) == null) {
-            return false;
-        }
         int first = pole.get(comb.get(0));
-
         for (int i = 1; i != comb.size(); i++) {
-            Integer pos = comb.get(i);
-            if (pole.get(pos) == null) {
-                return false;
-            }
-            if (pole.get(pos) != first) {
+            int pos = comb.get(i);
+            if (pole.get(pos) == 0 || pole.get(pos) != first) {
                 return false;
             }
         }
@@ -56,7 +71,7 @@ public class Ai {
 
     private ArrayList<Integer> emptyCells(ArrayList<Integer> pole){
         return IntStream.range(0, pole.size())
-                .filter(i -> pole.get(i) == null)
+                .filter(i -> pole.get(i) == 0)
                 .boxed()
                 .collect(Collectors.toCollection(ArrayList::new));
     }
@@ -67,15 +82,24 @@ public class Ai {
         } else if (who == human) {
             return -100000000;
         }
-        if (player == comp) {
-            return score.getScore(gameState, player) - score.getScore(gameState, -player);
-        } else {
-            return score.getScore(gameState, -player) - score.getScore(gameState, player);
+
+        int score;
+        var key = new Pair<>(gameState, player);
+        var scoreCache = cache.get(key);
+        if (scoreCache != null) {
+            return scoreCache;
         }
+        if (player == comp) {
+            score = this.score.getScore(gameState, comp) - this.score.getScore(gameState, human);
+        } else {
+            score = this.score.getScore(gameState, human) - this.score.getScore(gameState, comp);
+        }
+        cache.put(key, score);
+        return score;
     }
 
-    public int isWin(ArrayList<Integer> pole) {
-        for(ArrayList<Integer> winComb: winningCombinations){
+    public int isWin(OptimizedHashArrayList<Integer> pole) {
+        for (ArrayList<Integer> winComb: winningCombinations) {
             if (ownedOnePlayer(winComb, pole)) {
                 return pole.get(winComb.get(0));
             }
@@ -83,10 +107,10 @@ public class Ai {
         return 0;
     }
 
-    private int[] minimaxAlphaBeta(ArrayList<Integer> gameState, int depth, int alpha, int beta, int player) {
+    private int[] minimaxAlphaBeta(OptimizedHashArrayList<Integer> gameState, int depth, int alpha, int beta, int player) {
         int gameResult = isWin(gameState);
         if (depth == 0 || gameResult != 0 || count(gameState) == 0) {
-            return new int[] {score(gameResult, gameState, player) * (depth + 1), -1};
+            return new int[] {score(gameResult, gameState, player), -1};
         }
 
         int bestMove = -1;
@@ -96,7 +120,7 @@ public class Ai {
         for (Integer move : availableMoves) {
             gameState.set(move, player);
             int eval = minimaxAlphaBeta(gameState, depth - 1, alpha, beta, -player)[0];
-            gameState.set(move, null);
+            gameState.set(move, 0);
 
             if (player == comp) {
                 if (eval > scoreEval) {
