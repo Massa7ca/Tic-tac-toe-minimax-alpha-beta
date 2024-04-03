@@ -13,19 +13,19 @@ public class Ai {
     private final int comp;
     private final int human;
     private int depth;
+    private final HashMap<Pair<ArrayList<Integer>, Integer>, Integer> cache;
     private final ArrayList<ArrayList<Integer>> winningCombinations;
     private final ArrayList<Integer> moveTimeHistory = new ArrayList<>();
     private final Score score;
-    private final HashMap<Pair<ArrayList<Integer>, Integer>, Integer> history;
     public Ai(int depth, int winLength, ArrayList<ArrayList<Integer>> winningCombinations){
         this.comp = -1;
         this.human = 1;
         this.depth = depth;
-        this.history = new HashMap<>();
+        this.cache = new HashMap<>();
         this.winningCombinations = winningCombinations;
         this.score = new Score(winningCombinations, winLength);
     }
-    public int getMove(ArrayList<Integer> pole) {
+    public int getMove(OptimizedHashArrayList<Integer> pole) {
         winningCombinations.removeIf(it -> combIsFull(it, pole));
         if (countTimeFast(moveTimeHistory) == 4) {
             depth += 2;
@@ -83,14 +83,22 @@ public class Ai {
             return -100000000;
         }
 
-        if (player == comp) {
-            return this.score.getScore(gameState, comp) - this.score.getScore(gameState, human);
-        } else {
-            return this.score.getScore(gameState, human) - this.score.getScore(gameState, comp);
+        int score;
+        var key = new Pair<>(gameState, player);
+        var scoreCache = cache.get(key);
+        if (scoreCache != null) {
+            return scoreCache;
         }
+        if (player == comp) {
+            score = this.score.getScore(gameState, comp) - this.score.getScore(gameState, human);
+        } else {
+            score = this.score.getScore(gameState, human) - this.score.getScore(gameState, comp);
+        }
+        cache.put(key, score);
+        return score;
     }
 
-    public int isWin(ArrayList<Integer> pole) {
+    public int isWin(OptimizedHashArrayList<Integer> pole) {
         for (ArrayList<Integer> winComb: winningCombinations) {
             if (ownedOnePlayer(winComb, pole)) {
                 return pole.get(winComb.get(0));
@@ -99,7 +107,7 @@ public class Ai {
         return 0;
     }
 
-    private int[] minimaxAlphaBeta(ArrayList<Integer> gameState, int depth, int alpha, int beta, int player) {
+    private int[] minimaxAlphaBeta(OptimizedHashArrayList<Integer> gameState, int depth, int alpha, int beta, int player) {
         int gameResult = isWin(gameState);
         if (depth == 0 || gameResult != 0 || count(gameState) == 0) {
             return new int[] {score(gameResult, gameState, player), -1};

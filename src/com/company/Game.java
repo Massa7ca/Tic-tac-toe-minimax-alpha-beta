@@ -137,8 +137,8 @@ public class Game extends JFrame {
 
     }
 
-    private ArrayList<Integer> getField() {
-        ArrayList<Integer> pole = new ArrayList<>(cellCount);
+    private OptimizedHashArrayList<Integer> getField() {
+        OptimizedHashArrayList<Integer> pole = new OptimizedHashArrayList<>();
         for(int i = 0; i != field.size(); i ++){
             pole.add(field.get(i).get(2));
         }
