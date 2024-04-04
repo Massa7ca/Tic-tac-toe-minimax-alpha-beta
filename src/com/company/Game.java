@@ -121,24 +121,31 @@ public class Game extends JFrame {
     }
 
     private void click(int x, int y) {
-        int index = centreCell(x, y);
-        this.repaint();
-        if (firstMove == 1 && index != -1 && field.get(index).get(2) == 0) {
-            field.get(index).set(2, 1);
-            firstMove = -1;
-        }
+        boolean paint = false;
+        if (bot.isWin(getField()) == 0) {
+            int index = centreCell(x, y);
+            if (firstMove == 1 && index != -1 && field.get(index).get(2) == 0) {
+                field.get(index).set(2, 1);
+                firstMove = -1;
+                paint = true;
+                this.paint(super.getGraphics());
+            }
 
-        index = bot.getMove(getField());
+            if (paint || firstMove == -1) {
+                index = bot.getMove(getField());
+            }
 
-        if (firstMove == -1 && index != -1 && field.get(index).get(2) == 0) {
-            field.get(index).set(2, -1);
-            firstMove = 1;
+            if (firstMove == -1 && index != -1 && field.get(index).get(2) == 0) {
+                field.get(index).set(2, -1);
+                firstMove = 1;
+            }
+            this.paint(super.getGraphics());
         }
 
     }
 
-    private OptimizedHashArrayList<Integer> getField() {
-        OptimizedHashArrayList<Integer> pole = new OptimizedHashArrayList<>();
+    private ArrayList<Integer> getField() {
+        ArrayList<Integer> pole = new ArrayList<>();
         for(int i = 0; i != field.size(); i ++){
             pole.add(field.get(i).get(2));
         }

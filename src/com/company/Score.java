@@ -13,15 +13,57 @@ public class Score {
 
     private int countCell(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
         int count = 0;
-        for (Integer pos : comb) {
-            if (pole.get(pos) == 0) {
-                continue;
-            }
-            if (pole.get(pos) == player) {
+        for (int pos : comb) {
+            int poleValue = pole.get(pos);
+            if (poleValue == player) {
                 count++;
             }
         }
         return count;
+    }
+
+    private boolean isCenter(ArrayList<Integer> places) {
+        int length = places.size();
+        if (length % 2 == 0) {
+            if (!places.get(length / 2).equals(0) || !places.get((length / 2) - 1).equals(0)) {
+                return true;
+            }
+        }
+        return !places.get(length / 2).equals(0);
+    }
+
+    private int score(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
+        var places = new ArrayList<Integer>();
+        for (Integer cord : comb) {
+            int pos = pole.get(cord);
+            if (pos == 0 || pos == player) {
+                places.add(pos);
+            }
+        }
+        int count = (int)places.stream().filter(i -> i == player).count();
+        if (count == 1) {
+            boolean isCenter = isCenter(places);
+            if (isCenter) {
+                return (int)Math.pow(10, 2);
+            }
+            return (int)Math.pow(10, 1);
+        }
+        int score = 0;
+        int cof = 0;
+        boolean playerMet = false;
+        for(int i: places) {
+            if (i == player) {
+                playerMet = true;
+                if (cof > 0) {
+                    score += (int)Math.pow(3, cof);
+                    cof = 0;
+                }
+                score *= 10;
+            } else if (playerMet && i == 0) {
+                cof ++;
+            }
+        }
+        return score;
     }
 
     private boolean isBockWin(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
@@ -30,16 +72,14 @@ public class Score {
 
     private boolean isCombinationOpen(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
         int countEmpty = 0;
-        for (Integer pos : comb) {
-            if (pole.get(pos) == 0) {
-                countEmpty ++;
-                continue;
-            }
-            if (pole.get(pos) == -player) {
+        for (int pos : comb) {
+            int poleValue = pole.get(pos);
+            if (poleValue == 0) {
+                countEmpty++;
+            } else if (poleValue == -player) {
                 return false;
             }
         }
-
         return countEmpty != winLength;
     }
 
@@ -48,7 +88,7 @@ public class Score {
         if (count == 0) {
             return 0;
         }
-        return (int)Math.pow(10, count);
+        return (int)Math.pow(15, count);
     }
 
     public int getScore(ArrayList<Integer> pole, int player) {
@@ -58,7 +98,7 @@ public class Score {
 //                score += (int)Math.pow(15, winLength);
 //            }
             if (isCombinationOpen(comb, pole, player)) {
-                score += (scoreCountCell(comb, pole, player) * 2);
+                score += scoreCountCell(comb, pole, player);
             }
         }
         return score;
