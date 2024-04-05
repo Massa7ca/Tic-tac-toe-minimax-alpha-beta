@@ -4,7 +4,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 
 public class Game extends JFrame {
     private final int x;
@@ -15,7 +18,7 @@ public class Game extends JFrame {
     private final int winLength;
     private final int cellCount;
     private final ArrayList<ArrayList<Integer>> field;
-    public ArrayList<ArrayList<Integer>> winsCombinations = new ArrayList<>();
+    public int[][] winsCombinations;
     private final Ai bot;
     public Game(int x, int y, int fieldSize, int squareSize, int depth, int winLength, int firstMove) {
         this.x = x;
@@ -42,6 +45,7 @@ public class Game extends JFrame {
 
 
     private void generateWinsCombinations() {
+        var  winsCombinationsLocal = new ArrayList<ArrayList<Integer>>();
         //Shitaet cordinati dlya diaganaley
         for (int prib = -1; prib != 3; prib += 2) {
             for (int i = 0; i != cellCount ; i++) {
@@ -59,7 +63,7 @@ public class Game extends JFrame {
                     }
                     winsLine.add(cord);
                     if(winsLine.size() == winLength){
-                        winsCombinations.add(new ArrayList<>(winsLine));
+                        winsCombinationsLocal.add(new ArrayList<>(winsLine));
                         winsLine.clear();
                     }
                 }
@@ -77,7 +81,7 @@ public class Game extends JFrame {
                 }
                 winsLine.add(j);
                 if(winsLine.size() == winLength){
-                    winsCombinations.add(new ArrayList<>(winsLine));
+                    winsCombinationsLocal.add(new ArrayList<>(winsLine));
                     winsLine.clear();
                 }
             }
@@ -92,16 +96,22 @@ public class Game extends JFrame {
                 }
                 winsLine.add(j+i);
                 if(winsLine.size() == winLength){
-                    winsCombinations.add(new ArrayList<>(winsLine));
+                    winsCombinationsLocal.add(new ArrayList<>(winsLine));
                     winsLine.clear();
                 }
             }
         }
-        for (var com : winsCombinations) {
+        for (var com : winsCombinationsLocal) {
             Collections.sort(com);
         }
 
-        winsCombinations = new ArrayList<>(new HashSet<>(winsCombinations));
+        winsCombinationsLocal = new ArrayList<>(new HashSet<>(winsCombinationsLocal));
+
+        winsCombinations = new int[winsCombinationsLocal.size()][winLength];
+
+        for(int i = 0; i != winsCombinationsLocal.size(); i++) {
+            winsCombinations[i] = Utils.arrayListToArray(winsCombinationsLocal.get(i));
+        }
 
     }
 
@@ -139,15 +149,15 @@ public class Game extends JFrame {
                 field.get(index).set(2, -1);
                 firstMove = 1;
             }
-            this.paint(super.getGraphics());
+            this.repaint();
         }
 
     }
 
-    private ArrayList<Integer> getField() {
-        ArrayList<Integer> pole = new ArrayList<>();
-        for(int i = 0; i != field.size(); i ++){
-            pole.add(field.get(i).get(2));
+    private byte[] getField() {
+        byte[] pole = new byte[field.size()];
+        for(int i = 0; i != field.size(); i++){
+            pole[i] = field.get(i).get(2).byteValue();
         }
         return pole;
     }

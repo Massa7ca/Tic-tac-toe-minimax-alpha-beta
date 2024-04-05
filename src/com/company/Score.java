@@ -4,18 +4,15 @@ package com.company;
 import java.util.ArrayList;
 
 public class Score {
-    private final ArrayList<ArrayList<Integer>> winningCombinations;
     private final int winLength;
-    public Score(ArrayList<ArrayList<Integer>> winningCombinations, int winLength) {
-        this.winningCombinations = winningCombinations;
+    public Score(int winLength) {
         this.winLength = winLength;
     }
 
-    private int countCell(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
+    private int countCell(int[] comb, byte[] pole, byte player) {
         int count = 0;
         for (int pos : comb) {
-            int poleValue = pole.get(pos);
-            if (poleValue == player) {
+            if (pole[pos] == player) {
                 count++;
             }
         }
@@ -66,14 +63,14 @@ public class Score {
         return score;
     }
 
-    private boolean isBockWin(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
-        return countCell(comb, pole, -player) == (winLength-1) && countCell(comb, pole, player) == 1;
+    private boolean isBockWin(int[] comb, byte[] pole, byte player) {
+        return countCell(comb, pole, (byte) -player) == (winLength-1) && countCell(comb, pole, player) == 1;
     }
 
-    private boolean isCombinationOpen(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
+    private boolean isCombinationOpen(int[] comb, byte[] pole, byte player) {
         int countEmpty = 0;
         for (int pos : comb) {
-            int poleValue = pole.get(pos);
+            int poleValue = pole[pos];
             if (poleValue == 0) {
                 countEmpty++;
             } else if (poleValue == -player) {
@@ -83,7 +80,7 @@ public class Score {
         return countEmpty != winLength;
     }
 
-    private int scoreCountCell(ArrayList<Integer> comb, ArrayList<Integer> pole, int player) {
+    private int scoreCountCell(int[] comb, byte[] pole, byte player) {
         int count = countCell(comb, pole, player);
         if (count == 0) {
             return 0;
@@ -91,9 +88,9 @@ public class Score {
         return (int)Math.pow(15, count);
     }
 
-    public int getScore(ArrayList<Integer> pole, int player) {
+    public int getScore(byte[] pole, byte player, int[][] winningCombinations) {
         int score = 0;
-        for (ArrayList<Integer> comb : winningCombinations) {
+        for (int[] comb : winningCombinations) {
 //            if (isBockWin(comb, pole, player)) {
 //                score += (int)Math.pow(15, winLength);
 //            }
